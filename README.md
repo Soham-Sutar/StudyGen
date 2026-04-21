@@ -171,19 +171,7 @@ WEBAPP/
 ✅ Automatic session management
 ✅ Data persistence across sessions
 
-## 🔧 Customization
 
-### Add New Subjects
-Edit `schedule.html` and `HTML` files - Update the subject dropdown:
-```html
-<option value="Your Subject">Your Subject</option>
-```
-
-### Change Color Scheme
-Edit CSS files and update color variables:
-- Primary: `#ff79c6`
-- Success: `#50fa7b`
-- etc.
 
 ### Extend Features
 1. Add new pages in `HTML/` folder
@@ -192,41 +180,6 @@ Edit CSS files and update color variables:
 4. Add menu link in sidebar
 5. Connect to auth.js for user session management
 
-## 📋 User Guide
-
-### Best Practices
-
-1. **Task Management**
-   - Set realistic due dates
-   - Break large tasks into smaller subtasks
-   - Prioritize high-impact tasks
-
-2. **Study Materials**
-   - Organize materials by subject
-   - Keep track of progress
-   - Links should be accessible (shared Google Drive, public videos)
-
-3. **Analytics**
-   - Review weekly to track progress
-   - Adjust task duration estimates based on actuals
-   - Focus on subjects with lower completion rates
-
-## 🌟 Tips for Success
-
-- Set daily task goals
-- Update task progress regularly
-- Review analytics weekly
-- Organize study materials by difficulty level
-- Use different priority levels strategically
-- Estimate task durations realistically
-
-## 📞 Support
-
-For issues or feature requests:
-1. Check the browser console (F12) for errors
-2. Ensure JavaScript is enabled
-3. Clear cache if experiencing issues
-4. Try a different browser if problems persist
 
 ## 📄 License
 

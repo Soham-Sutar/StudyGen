@@ -182,33 +182,6 @@ All data is stored locally in your browser using localStorage:
 - Dark/Light theme toggle
 - Customizable color schemes
 
-## Tips for Best Experience
-
-1. **Set Realistic Goals**: Don't overload your schedule
-2. **Use Priorities**: Mark important tasks as High priority
-3. **Check Dashboard Daily**: Stay updated on your progress
-4. **Organize Materials**: Use clear titles and descriptions
-5. **Review Analytics**: Identify patterns in your study habits
-
-## Troubleshooting
-
-### Tasks not appearing?
-- Make sure you're logged in
-- Check that tasks have valid due dates
-- Try refreshing the page
-
-### Analytics not showing data?
-- Add and complete some tasks first
-- Data accumulates over time for better insights
-
-### Can't login?
-- Verify your username and password
-- Try registering a new account if forgotten
-
-### Charts not loading?
-- Ensure internet connection (Chart.js loads from CDN)
-- Try refreshing the page
-
 ## Credits
 
 Developed as part of a hackathon project to create a comprehensive study management tool for students.

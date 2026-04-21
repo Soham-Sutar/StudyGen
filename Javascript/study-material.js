@@ -1,236 +1,155 @@
-// Study Material Management System
-
-class MaterialManager {
+// Study Material Management
+class StudyMaterialManager {
   constructor() {
-    this.materials = this.loadMaterials();
+    this.currentUser = auth.getCurrentUser();
+    this.materials = this.currentUser?.studyMaterials || [];
+    this.init();
   }
 
-  // Load materials from localStorage
+  init() {
+    // Ensure auth is properly loaded
+    if (!auth.isLoggedIn() || !this.currentUser) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    this.loadMaterials();
+    this.setupForm();
+    this.setupLogout();
+  }
+
   loadMaterials() {
-    const userId = auth.getCurrentUser()?.id;
-    if (!userId) return [];
-    
-    const userMaterials = localStorage.getItem(`materials_${userId}`);
-    return userMaterials ? JSON.parse(userMaterials) : this.getDefaultMaterials();
+    const materialGrid = document.getElementById('materials-grid');
+    if (!materialGrid) return;
+
+    if (this.materials.length === 0) {
+      materialGrid.innerHTML = '<p class="no-materials">Add your Google Drive or study links here!</p>';
+      return;
+    }
+
+    materialGrid.innerHTML = '';
+    this.materials.forEach((material, index) => {
+      const card = this.createMaterialCard(material, index);
+      materialGrid.appendChild(card);
+    });
   }
 
-  // Get default materials
-  getDefaultMaterials() {
-    return [
-      {
-        id: '1',
-        title: 'Physics Notes - Mechanics',
-        subject: 'Physics',
-        description: 'Comprehensive notes covering Newton\'s laws, motion, and forces.',
-        link: '#',
-        createdAt: new Date('2025-11-01').toISOString()
-      },
-      {
-        id: '2',
-        title: 'Algebra Practice Sheets',
-        subject: 'Mathematics',
-        description: 'Practice problems for quadratic equations, polynomials, and functions.',
-        link: '#',
-        createdAt: new Date('2025-11-05').toISOString()
-      },
-      {
-        id: '3',
-        title: 'World History Timeline',
-        subject: 'History',
-        description: 'Key historical events from ancient civilizations to modern times.',
-        link: '#',
-        createdAt: new Date('2025-11-10').toISOString()
+  createMaterialCard(material, index) {
+    const card = document.createElement('div');
+    card.className = 'material-card';
+    card.innerHTML = `
+      <div class="material-header">
+        <h3>${material.title}</h3>
+        <span class="material-progress">${material.progress}%</span>
+      </div>
+      ${material.link ? `<a href="${material.link}" target="_blank" class="material-link">📁 Open</a>` : ''}
+      <div class="material-actions">
+        <button class="btn-small" onclick="studyMaterialManager.updateProgress(${index})">Update Progress</button>
+        <button class="btn-small btn-edit" onclick="studyMaterialManager.editMaterial(${index})">Edit</button>
+        <button class="btn-small btn-delete" onclick="studyMaterialManager.deleteMaterial(${index})">Delete</button>
+      </div>
+    `;
+    return card;
+  }
+
+  updateProgress(index) {
+    const newProgress = prompt('Enter progress percentage (0-100):', this.materials[index].progress);
+    if (newProgress !== null) {
+      const progress = Math.min(100, Math.max(0, parseInt(newProgress)));
+      this.materials[index].progress = progress;
+      this.saveMaterials();
+      this.loadMaterials();
+    }
+  }
+
+  editMaterial(index) {
+    const material = this.materials[index];
+    document.getElementById('material-title').value = material.title;
+    document.getElementById('material-link').value = material.link;
+    document.getElementById('add-material-form').dataset.editIndex = index;
+    document.querySelector('.btn-add-material').textContent = 'Update Material';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  deleteMaterial(index) {
+    if (confirm('Are you sure you want to delete this material?')) {
+      this.materials.splice(index, 1);
+      this.saveMaterials();
+      this.loadMaterials();
+    }
+  }
+
+  setupForm() {
+    const form = document.getElementById('add-material-form');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const material = {
+        id: Date.now(),
+        title: document.getElementById('material-title').value,
+        link: document.getElementById('material-link').value,
+        progress: 0
+      };
+
+      if (!material.title) {
+        alert('Please enter a title');
+        return;
       }
-    ];
+
+      const editIndex = form.dataset.editIndex;
+      if (editIndex !== undefined) {
+        this.materials[editIndex] = { ...this.materials[editIndex], ...material };
+        delete form.dataset.editIndex;
+        document.querySelector('.btn-add-material').textContent = 'Add Material';
+      } else {
+        this.materials.push(material);
+      }
+
+      this.saveMaterials();
+      form.reset();
+      this.loadMaterials();
+      alert('Material ' + (editIndex !== undefined ? 'updated' : 'added') + ' successfully!');
+    });
   }
 
-  // Save materials to localStorage
   saveMaterials() {
-    const userId = auth.getCurrentUser()?.id;
-    if (!userId) return;
-    
-    localStorage.setItem(`materials_${userId}`, JSON.stringify(this.materials));
+    this.currentUser.studyMaterials = this.materials;
+    auth.updateUserData({ studyMaterials: this.materials });
   }
 
-  // Add new material
-  addMaterial(title, subject, description, link) {
-    const material = {
-      id: Date.now().toString(),
-      title: title,
-      subject: subject,
-      description: description,
-      link: link || '#',
-      createdAt: new Date().toISOString()
-    };
-    
-    this.materials.push(material);
-    this.saveMaterials();
-    return material;
-  }
-
-  // Delete material
-  deleteMaterial(materialId) {
-    this.materials = this.materials.filter(m => m.id !== materialId);
-    this.saveMaterials();
-  }
-
-  // Get all materials
-  getMaterials() {
-    return this.materials;
-  }
-
-  // Get materials by subject
-  getMaterialsBySubject(subject) {
-    if (subject === 'all') return this.materials;
-    return this.materials.filter(m => m.subject === subject);
-  }
-
-  // Search materials
-  searchMaterials(query) {
-    const lowerQuery = query.toLowerCase();
-    return this.materials.filter(m => 
-      m.title.toLowerCase().includes(lowerQuery) ||
-      m.description.toLowerCase().includes(lowerQuery) ||
-      m.subject.toLowerCase().includes(lowerQuery)
-    );
+  setupLogout() {
+    const logoutLink = document.querySelector('a[href="#logout"]');
+    if (logoutLink) {
+      logoutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        auth.logout();
+        window.location.href = 'login.html';
+      });
+    }
   }
 }
 
-// Initialize material manager
-const materialManager = new MaterialManager();
-
-// Study Material page functionality
-if (window.location.pathname.includes('study-material.html')) {
-  const materialForm = document.getElementById('material-form');
-  const materialList = document.getElementById('material-list');
-  const searchInput = document.getElementById('search-materials');
-  const filterSelect = document.getElementById('filter-subject');
-
-  // Render materials
-  function renderMaterials(materials = null) {
-    const materialsToRender = materials || materialManager.getMaterials();
-    
-    if (materialsToRender.length === 0) {
-      materialList.innerHTML = `
-        <div class="no-materials">
-          <p>No study materials found.</p>
-          <p>Add your first material using the form above!</p>
-        </div>
-      `;
-      return;
-    }
-    
-    // Sort by creation date (newest first)
-    const sortedMaterials = materialsToRender.sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    
-    materialList.innerHTML = sortedMaterials.map(material => `
-      <div class="material-item" data-material-id="${material.id}">
-        <div class="material-header">
-          <h4>${material.title}</h4>
-          <span class="material-subject-badge">${material.subject}</span>
-        </div>
-        <p class="material-description">${material.description}</p>
-        <div class="material-footer">
-          <span class="material-date">Added: ${formatDate(new Date(material.createdAt))}</span>
-          <div class="material-actions">
-            ${material.link !== '#' ? 
-              `<a href="${material.link}" target="_blank" class="btn-view" rel="noopener noreferrer">🔗 Open</a>` : 
-              '<span class="btn-view disabled">No link</span>'
-            }
-            <button class="btn-delete" onclick="deleteMaterial('${material.id}')">🗑️ Delete</button>
-          </div>
-        </div>
-      </div>
-    `).join('');
+let studyMaterialManager;
+document.addEventListener('DOMContentLoaded', () => {
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
   }
-
-  // Format date
-  function formatDate(date) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
   }
+  studyMaterialManager = new StudyMaterialManager();
+});
 
-  // Delete material
-  window.deleteMaterial = function(materialId) {
-    if (confirm('Are you sure you want to delete this material?')) {
-      materialManager.deleteMaterial(materialId);
-      applyFilters();
-      showNotification('Material deleted successfully!', 'success');
-    }
-  };
-
-  // Apply filters
-  function applyFilters() {
-    const searchQuery = searchInput.value.trim();
-    const selectedSubject = filterSelect.value;
-    
-    let filteredMaterials = materialManager.getMaterials();
-    
-    // Apply subject filter
-    if (selectedSubject !== 'all') {
-      filteredMaterials = filteredMaterials.filter(m => m.subject === selectedSubject);
-    }
-    
-    // Apply search filter
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filteredMaterials = filteredMaterials.filter(m =>
-        m.title.toLowerCase().includes(lowerQuery) ||
-        m.description.toLowerCase().includes(lowerQuery) ||
-        m.subject.toLowerCase().includes(lowerQuery)
-      );
-    }
-    
-    renderMaterials(filteredMaterials);
+if (document.readyState !== 'loading') {
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
   }
-
-  // Add material form submission
-  materialForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const title = document.getElementById('material-title').value;
-    const subject = document.getElementById('material-subject').value;
-    const description = document.getElementById('material-description').value;
-    const link = document.getElementById('material-link').value;
-    
-    materialManager.addMaterial(title, subject, description, link);
-    applyFilters();
-    materialForm.reset();
-    
-    showNotification('Material added successfully!', 'success');
-  });
-
-  // Search input listener
-  searchInput.addEventListener('input', applyFilters);
-
-  // Filter select listener
-  filterSelect.addEventListener('change', applyFilters);
-
-  // Show notification
-  function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(n => n.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 300);
-    }, 3000);
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
   }
-
-  // Initial render
-  renderMaterials();
+  studyMaterialManager = new StudyMaterialManager();
 }

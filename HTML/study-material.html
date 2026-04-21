@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Material</title>
+  <title>Study Material - StudyGen</title>
   <link rel="stylesheet" href="../CSS/studymaterial.css">
 </head>
 <body>
+  <button class="menu-toggle" id="menuToggle">☰</button>
   <div class="container">
-    <!-- Sidebar Menu (Same as Dashboard) -->
-    <nav class="sidebar">
+    <nav class="sidebar" id="sidebar">
       <h1 class="logo">StudyGen</h1>
       <ul class="menu">
         <li><a href="dashboard.html">Dashboard</a></li>
@@ -20,34 +20,47 @@
       </ul>
     </nav>
 
-    <!-- Main Content -->
     <main class="dashboard">
       <header class="dashboard-header">
         <h2>Study Material</h2>
-        <p>Find and organize resources to aid your studies.</p>
+        <p>Add your study links and Google Drive folders here.</p>
       </header>
 
+      <section class="upload-section">
+        <h3>Add Study Material</h3>
+        <form id="add-material-form">
+          <div class="form-group">
+            <label for="material-title">Title</label>
+            <input type="text" id="material-title" placeholder="e.g., Physics Chapter 5 Notes" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="material-link">Link to Google Drive or Resource</label>
+            <input type="url" id="material-link" placeholder="https://drive.google.com/... or https://..." required>
+            <small style="color: #999; display: block; margin-top: 5px;">Paste your Google Drive link or any study material URL</small>
+          </div>
+
+          <button type="submit" class="btn-add-material">Add Material</button>
+        </form>
+      </section>
+
       <section class="materials">
-        <h3>Available Study Materials</h3>
-        <div class="material-list">
-          <div class="material-item">
-            <h4>Physics Notes</h4>
-            <p>Chapter 1 to Chapter 5 summary and solved examples.</p>
-            <a href="#" class="download-button">Download</a>
-          </div>
-          <div class="material-item">
-            <h4>Algebra Practice Sheets</h4>
-            <p>Comprehensive worksheets for mastering algebra.</p>
-            <a href="#" class="download-button">Download</a>
-          </div>
-          <div class="material-item">
-            <h4>History Timeline</h4>
-            <p>Key historical events with detailed descriptions.</p>
-            <a href="#" class="download-button">Download</a>
-          </div>
+        <h3>Your Study Materials</h3>
+        <div class="material-grid" id="materials-grid">
+          <p class="no-materials">No materials added yet. Add one above!</p>
         </div>
       </section>
     </main>
   </div>
+  <script src="../Javascript/auth.js"></script>
+  <script src="../Javascript/study-material.js"></script>
+  <script>
+    // Mobile menu toggle
+    document.getElementById('menuToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('active');
+    });
+  </script>
+</body>
+</html>
 </body>
 </html>

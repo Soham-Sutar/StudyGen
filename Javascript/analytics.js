@@ -1,390 +1,233 @@
-// Analytics Page Functionality
-
-// Analytics data manager
-class AnalyticsManager {
+// Analytics with Graphs
+class Analytics {
   constructor() {
-    this.tasks = taskManager.getTasks();
+    this.currentUser = auth.getCurrentUser();
+    this.init();
   }
 
-  // Get performance data for last N weeks
-  getPerformanceData(weeks = 4) {
-    const data = [];
-    const labels = [];
-    const today = new Date();
-    
-    for (let i = weeks - 1; i >= 0; i--) {
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - (i * 7) - 6);
-      const weekEnd = new Date(today);
-      weekEnd.setDate(today.getDate() - (i * 7));
-      
-      const weekTasks = this.tasks.filter(t => {
-        const taskDate = new Date(t.createdAt);
-        return taskDate >= weekStart && taskDate <= weekEnd;
-      });
-      
-      const completed = weekTasks.filter(t => t.completed).length;
-      const total = weekTasks.length;
-      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-      
-      data.push(percentage);
-      labels.push(`Week ${weeks - i}`);
+  init() {
+    // Ensure auth is properly loaded
+    if (!auth.isLoggedIn() || !this.currentUser) {
+      window.location.href = 'login.html';
+      return;
     }
-    
-    return { labels, data };
+
+    this.loadAnalytics();
+    this.setupLogout();
   }
 
-  // Get time spent data by subject
-  getTimeSpentBySubject() {
-    const subjects = {};
-    
-    this.tasks.forEach(task => {
-      const subject = task.subject || 'General';
-      subjects[subject] = (subjects[subject] || 0) + 1;
-    });
-    
-    const labels = Object.keys(subjects);
-    const data = Object.values(subjects);
-    
-    return { labels, data };
+  loadAnalytics() {
+    this.displayTaskStats();
+    this.displayProgressChart();
+    this.displayTimeSpentChart();
+    this.displaySubjectBreakdown();
   }
 
-  // Get completion rate data
-  getCompletionRateData() {
-    const completed = this.tasks.filter(t => t.completed).length;
-    const pending = this.tasks.length - completed;
-    
-    return {
-      labels: ['Completed', 'Pending'],
-      data: [completed, pending]
-    };
-  }
+  displayTaskStats() {
+    const statsContainer = document.getElementById('stats-container');
+    if (!statsContainer) return;
 
-  // Get daily activity data for last 7 days
-  getDailyActivity() {
-    const data = [];
-    const labels = [];
-    const today = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const dayTasks = this.tasks.filter(t => t.dueDate === dateStr);
-      const completed = dayTasks.filter(t => t.completed).length;
-      
-      data.push(completed);
-      
-      if (i === 0) {
-        labels.push('Today');
-      } else if (i === 1) {
-        labels.push('Yesterday');
-      } else {
-        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-      }
-    }
-    
-    return { labels, data };
-  }
+    const tasks = this.currentUser.tasks || [];
+    const completedTasks = tasks.filter(t => t.completed).length;
+    const pendingTasks = tasks.length - completedTasks;
+    const totalHours = tasks.reduce((sum, t) => sum + (t.duration || 0), 0);
+    const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
-  // Get productivity stats
-  getProductivityStats() {
-    const totalTasks = this.tasks.length;
-    const completedTasks = this.tasks.filter(t => t.completed).length;
-    const overdueTasks = taskManager.getOverdueTasks().length;
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-    
-    return {
-      totalTasks,
-      completedTasks,
-      overdueTasks,
-      completionRate
-    };
-  }
-}
-
-// Initialize analytics on page load
-if (window.location.pathname.includes('analytics.html')) {
-  document.addEventListener('DOMContentLoaded', () => {
-    const analyticsManager = new AnalyticsManager();
-    
-    // Display stats
-    displayStats(analyticsManager);
-    
-    // Initialize charts
-    initializeCharts(analyticsManager);
-  });
-}
-
-// Display productivity stats
-function displayStats(analyticsManager) {
-  const stats = analyticsManager.getProductivityStats();
-  
-  // Create stats section if it doesn't exist
-  const analyticsMain = document.querySelector('.analytics');
-  if (!analyticsMain) return;
-  
-  let statsSection = document.querySelector('.stats-overview');
-  if (!statsSection) {
-    statsSection = document.createElement('section');
-    statsSection.className = 'stats-overview';
-    analyticsMain.insertBefore(statsSection, analyticsMain.firstChild.nextSibling);
-  }
-  
-  statsSection.innerHTML = `
-    <h3>Productivity Overview</h3>
-    <div class="stats-grid">
+    statsContainer.innerHTML = `
       <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-value">${stats.totalTasks}</div>
-        <div class="stat-label">Total Tasks</div>
+        <h4>Total Tasks</h4>
+        <p class="stat-number">${tasks.length}</p>
       </div>
-      <div class="stat-card success">
-        <div class="stat-icon">✅</div>
-        <div class="stat-value">${stats.completedTasks}</div>
-        <div class="stat-label">Completed</div>
+      <div class="stat-card">
+        <h4>Completed</h4>
+        <p class="stat-number">${completedTasks}</p>
       </div>
-      <div class="stat-card ${stats.overdueTasks > 0 ? 'warning' : ''}">
-        <div class="stat-icon">⚠️</div>
-        <div class="stat-value">${stats.overdueTasks}</div>
-        <div class="stat-label">Overdue</div>
+      <div class="stat-card">
+        <h4>Pending</h4>
+        <p class="stat-number">${pendingTasks}</p>
       </div>
-      <div class="stat-card ${stats.completionRate >= 70 ? 'success' : stats.completionRate >= 40 ? 'warning' : 'danger'}">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-value">${stats.completionRate}%</div>
-        <div class="stat-label">Completion Rate</div>
+      <div class="stat-card">
+        <h4>Total Study Hours</h4>
+        <p class="stat-number">${totalHours.toFixed(1)}</p>
       </div>
-    </div>
-  `;
-}
-
-// Initialize all charts
-function initializeCharts(analyticsManager) {
-  // Performance Chart
-  const performanceData = analyticsManager.getPerformanceData();
-  const performanceCtx = document.getElementById('performanceChart');
-  if (performanceCtx) {
-    new Chart(performanceCtx.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: performanceData.labels,
-        datasets: [{
-          label: 'Task Completion Rate (%)',
-          data: performanceData.data,
-          borderColor: '#50fa7b',
-          backgroundColor: 'rgba(80, 250, 123, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#f8f8f2',
-              font: {
-                size: 14
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              color: '#f8f8f2',
-              callback: function(value) {
-                return value + '%';
-              }
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          x: {
-            ticks: {
-              color: '#f8f8f2'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // Time Spent by Subject Chart
-  const timeSpentData = analyticsManager.getTimeSpentBySubject();
-  const timeSpentCtx = document.getElementById('timeSpentChart');
-  if (timeSpentCtx) {
-    const colors = [
-      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-      '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-    ];
-    
-    new Chart(timeSpentCtx.getContext('2d'), {
-      type: 'doughnut',
-      data: {
-        labels: timeSpentData.labels,
-        datasets: [{
-          label: 'Tasks by Subject',
-          data: timeSpentData.data,
-          backgroundColor: colors.slice(0, timeSpentData.labels.length),
-          borderColor: '#282a36',
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              color: '#f8f8f2',
-              padding: 15,
-              font: {
-                size: 12
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // Completion Rate Chart
-  const completionData = analyticsManager.getCompletionRateData();
-  const completionCtx = document.getElementById('completionRateChart');
-  if (completionCtx) {
-    new Chart(completionCtx.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: completionData.labels,
-        datasets: [{
-          label: 'Number of Tasks',
-          data: completionData.data,
-          backgroundColor: ['#4CAF50', '#FF5733'],
-          borderColor: ['#45a049', '#cc4629'],
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#f8f8f2',
-              font: {
-                size: 14
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: '#f8f8f2',
-              stepSize: 1
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          x: {
-            ticks: {
-              color: '#f8f8f2'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // Daily Activity Chart (Additional chart)
-  createDailyActivityChart(analyticsManager);
-}
-
-// Create daily activity chart
-function createDailyActivityChart(analyticsManager) {
-  const analyticsMain = document.querySelector('.analytics');
-  if (!analyticsMain) return;
-  
-  // Check if section already exists
-  let dailySection = document.querySelector('.daily-activity');
-  if (!dailySection) {
-    dailySection = document.createElement('section');
-    dailySection.className = 'daily-activity';
-    dailySection.innerHTML = `
-      <h3>Daily Activity (Last 7 Days)</h3>
-      <canvas id="dailyActivityChart"></canvas>
+      <div class="stat-card">
+        <h4>Completion Rate</h4>
+        <p class="stat-number">${completionRate}%</p>
+      </div>
     `;
-    analyticsMain.appendChild(dailySection);
   }
-  
-  const dailyData = analyticsManager.getDailyActivity();
-  const dailyCtx = document.getElementById('dailyActivityChart');
-  
-  if (dailyCtx) {
-    new Chart(dailyCtx.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: dailyData.labels,
-        datasets: [{
-          label: 'Tasks Completed',
-          data: dailyData.data,
-          backgroundColor: '#50fa7b',
-          borderColor: '#45d96b',
-          borderWidth: 2,
-          borderRadius: 5
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#f8f8f2',
-              font: {
-                size: 14
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: '#f8f8f2',
-              stepSize: 1
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          x: {
-            ticks: {
-              color: '#f8f8f2'
-            },
-            grid: {
-              display: false
-            }
-          }
-        }
-      }
+
+  displayProgressChart() {
+    const canvas = document.getElementById('progress-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const tasks = this.currentUser.tasks || [];
+    const completed = tasks.filter(t => t.completed).length;
+    const pending = tasks.length - completed;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = 80;
+
+    // Draw pie chart
+    const total = tasks.length || 1;
+    const completedPercent = completed / total;
+    const pendingPercent = pending / total;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw completed portion (green)
+    ctx.fillStyle = '#4CAF50';
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, 0, completedPercent * 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw pending portion (orange)
+    ctx.fillStyle = '#FF9800';
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, completedPercent * 2 * Math.PI, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+
+    // Add text
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(completed + '/' + tasks.length, centerX, centerY);
+
+    // Legend
+    const legend = document.getElementById('progress-legend');
+    if (legend) {
+      legend.innerHTML = `
+        <div class="legend-item"><span class="legend-color" style="background: #4CAF50;"></span>Completed: ${completed}</div>
+        <div class="legend-item"><span class="legend-color" style="background: #FF9800;"></span>Pending: ${pending}</div>
+      `;
+    }
+  }
+
+  displayTimeSpentChart() {
+    const canvas = document.getElementById('time-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const tasks = this.currentUser.tasks || [];
+
+    // Group tasks by subject
+    const subjectTime = {};
+    tasks.forEach(task => {
+      subjectTime[task.subject] = (subjectTime[task.subject] || 0) + task.duration;
+    });
+
+    const subjects = Object.keys(subjectTime);
+    const times = Object.values(subjectTime);
+
+    const maxTime = Math.max(...times, 1);
+    const barWidth = canvas.width / (subjects.length || 1);
+    const padding = 40;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw axes
+    ctx.strokeStyle = '#ccc';
+    ctx.beginPath();
+    ctx.moveTo(padding, canvas.height - padding);
+    ctx.lineTo(canvas.width, canvas.height - padding);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(padding, 0);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.stroke();
+
+    // Draw bars
+    ctx.fillStyle = '#667eea';
+    subjects.forEach((subject, index) => {
+      const x = padding + index * barWidth + barWidth / 4;
+      const barHeight = (times[index] / maxTime) * (canvas.height - padding - 30);
+      const y = canvas.height - padding - barHeight;
+
+      ctx.fillRect(x, y, barWidth / 2, barHeight);
+
+      // Label
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(subject, x + barWidth / 4, canvas.height - padding + 20);
     });
   }
+
+  displaySubjectBreakdown() {
+    const container = document.getElementById('subject-breakdown');
+    if (!container) return;
+
+    const tasks = this.currentUser.tasks || [];
+    const subjectStats = {};
+
+    tasks.forEach(task => {
+      if (!subjectStats[task.subject]) {
+        subjectStats[task.subject] = { total: 0, completed: 0 };
+      }
+      subjectStats[task.subject].total++;
+      if (task.completed) {
+        subjectStats[task.subject].completed++;
+      }
+    });
+
+    container.innerHTML = '';
+    Object.entries(subjectStats).forEach(([subject, stats]) => {
+      const percentage = Math.round((stats.completed / stats.total) * 100);
+      const row = document.createElement('div');
+      row.className = 'breakdown-row';
+      row.innerHTML = `
+        <span>${subject}</span>
+        <div class="breakdown-bar">
+          <div class="breakdown-progress" style="width: ${percentage}%"></div>
+        </div>
+        <span>${percentage}%</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  setupLogout() {
+    const logoutLink = document.querySelector('a[href="#logout"]');
+    if (logoutLink) {
+      logoutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        auth.logout();
+        window.location.href = 'login.html';
+      });
+    }
+  }
+}
+
+let analytics;
+document.addEventListener('DOMContentLoaded', () => {
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
+  }
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
+  }
+  analytics = new Analytics();
+});
+
+if (document.readyState !== 'loading') {
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
+  }
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
+  }
+  analytics = new Analytics();
 }

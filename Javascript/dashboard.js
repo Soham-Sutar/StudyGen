@@ -1,108 +1,206 @@
-// Dashboard functionality
-
-// Update progress bar
-function updateProgress() {
-  const progress = taskManager.getTodayProgress();
-  const progressBar = document.getElementById('today-progress');
-  const progressText = document.getElementById('progress-text');
-  
-  if (progressBar) {
-    progressBar.style.width = progress + '%';
-    progressBar.textContent = progress + '%';
+// Dashboard Functionality
+class Dashboard {
+  constructor() {
+    this.currentUser = auth.getCurrentUser();
+    this.sortBy = 'date'; // default sort
+    this.init();
   }
-  
-  if (progressText) {
-    const todayTasks = taskManager.getTodayTasks();
-    const completed = todayTasks.filter(t => t.completed).length;
-    const total = todayTasks.length;
+
+  init() {
+    if (!this.currentUser) {
+      window.location.href = 'login.html';
+      return;
+    }
+    this.displayWelcome();
+    this.setupSortControls();
+    this.loadTasks();
+    this.loadProgress();
+    this.loadSubjectProgress();
+    this.setupLogout();
+  }
+
+  displayWelcome() {
+    const header = document.querySelector('.dashboard-header h2');
+    if (header) {
+      header.textContent = `Welcome, ${this.currentUser.username}!`;
+    }
+  }
+
+  setupSortControls() {
+    const sortSelect = document.getElementById('task-sort-select');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', (e) => {
+        this.sortBy = e.target.value;
+        this.loadTasks();
+      });
+    }
+  }
+
+  sortTasks(tasks) {
+    const tasksCopy = [...tasks];
     
-    if (total === 0) {
-      progressText.textContent = 'No tasks scheduled for today. Go to Schedule Task to add some!';
-    } else if (completed === total) {
-      progressText.textContent = `🎉 Congratulations! You've completed all ${total} tasks for today!`;
-    } else {
-      progressText.textContent = `${completed} of ${total} tasks completed. Keep going!`;
+    if (this.sortBy === 'priority') {
+      const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
+      tasksCopy.sort((a, b) => {
+        // Pending tasks first, completed last
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        // Then by priority
+        return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
+      });
+    } else if (this.sortBy === 'status') {
+      tasksCopy.sort((a, b) => {
+        // Pending first, completed last
+        return a.completed - b.completed;
+      });
+    } else { // date (default)
+      tasksCopy.sort((a, b) => {
+        // Pending tasks first
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        // Then by date
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+    }
+    
+    return tasksCopy;
+  }
+
+  loadTasks() {
+    const taskList = document.getElementById('dashboard-tasks');
+    if (!taskList) return;
+
+    const tasks = this.currentUser.tasks || [];
+
+    if (tasks.length === 0) {
+      taskList.innerHTML = '<li class="no-tasks">No tasks yet. <a href="schedule.html">Create one</a></li>';
+      return;
+    }
+
+    const sortedTasks = this.sortTasks(tasks);
+    taskList.innerHTML = '';
+    
+    sortedTasks.slice(0, 5).forEach(task => {
+      const li = document.createElement('li');
+      li.className = `task-item ${task.completed ? 'completed' : ''}`;
+      li.innerHTML = `
+        <div class="task-header">
+          <strong>${task.title}</strong>
+          <span class="task-status">${task.completed ? '✓ Completed' : 'Pending'}</span>
+        </div>
+        <p class="task-subject">Subject: ${task.subject}</p>
+        <p class="task-priority">Priority: <span class="priority-${task.priority.toLowerCase()}">${task.priority}</span></p>
+        <p class="task-date">Due: ${new Date(task.dueDate).toLocaleDateString()}</p>
+      `;
+      taskList.appendChild(li);
+    });
+  }
+
+  loadProgress() {
+    const progressBar = document.getElementById('today-progress');
+    const progressText = document.getElementById('progress-text');
+
+    if (progressBar && progressText) {
+      const tasks = this.currentUser.tasks || [];
+      const completedTasks = tasks.filter(t => t.completed).length;
+      const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
+      progressBar.style.width = progress + '%';
+      progressBar.textContent = progress + '%';
+      progressText.textContent = `You've completed ${completedTasks} out of ${tasks.length} tasks. Great job!`;
+    }
+  }
+
+  loadSubjectProgress() {
+    const subjectBreakdownContainer = document.getElementById('subject-breakdown');
+    if (!subjectBreakdownContainer) return;
+
+    const tasks = this.currentUser.tasks || [];
+    if (tasks.length === 0) {
+      subjectBreakdownContainer.innerHTML = '<p class="no-tasks">Add tasks to see subject progress.</p>';
+      return;
+    }
+
+    // Calculate progress by subject
+    const subjectStats = {};
+    tasks.forEach(task => {
+      if (!subjectStats[task.subject]) {
+        subjectStats[task.subject] = { total: 0, completed: 0 };
+      }
+      subjectStats[task.subject].total++;
+      if (task.completed) {
+        subjectStats[task.subject].completed++;
+      }
+    });
+
+    subjectBreakdownContainer.innerHTML = '';
+    
+    Object.keys(subjectStats).forEach(subject => {
+      const stats = subjectStats[subject];
+      const percentage = Math.round((stats.completed / stats.total) * 100);
+      
+      const subjectDiv = document.createElement('div');
+      subjectDiv.className = 'subject-progress-item';
+      subjectDiv.innerHTML = `
+        <div class="subject-header">
+          <strong>${subject}</strong>
+          <span class="subject-stat">${stats.completed}/${stats.total}</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: ${percentage}%;">${percentage}%</div>
+        </div>
+      `;
+      subjectBreakdownContainer.appendChild(subjectDiv);
+    });
+  }
+
+  setupLogout() {
+    const logoutLink = document.querySelector('a[href="#logout"]');
+    if (logoutLink) {
+      logoutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        auth.logout();
+        window.location.href = 'login.html';
+      });
     }
   }
 }
 
-// Render dashboard tasks
-function renderDashboardTasks() {
-  const dashboardTasks = document.getElementById('dashboard-tasks');
-  if (!dashboardTasks) return;
-  
-  const todayTasks = taskManager.getTodayTasks();
-  const upcomingTasks = taskManager.getUpcomingTasks(3);
-  const overdueTasks = taskManager.getOverdueTasks();
-  
-  let tasksHTML = '';
-  
-  // Show overdue tasks first
-  if (overdueTasks.length > 0) {
-    tasksHTML += '<li class="task-header overdue-header">⚠️ Overdue Tasks</li>';
-    overdueTasks.slice(0, 3).forEach(task => {
-      tasksHTML += `
-        <li class="task-item-dashboard ${task.completed ? 'completed' : 'overdue'}">
-          <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                 onchange="taskManager.toggleTask('${task.id}'); updateDashboard();">
-          <span class="task-title">${task.title}</span>
-          <span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span>
-        </li>
-      `;
-    });
-  }
-  
-  // Show today's tasks
-  if (todayTasks.length > 0) {
-    tasksHTML += '<li class="task-header today-header">📅 Today</li>';
-    todayTasks.slice(0, 5).forEach(task => {
-      tasksHTML += `
-        <li class="task-item-dashboard ${task.completed ? 'completed' : ''}">
-          <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                 onchange="taskManager.toggleTask('${task.id}'); updateDashboard();">
-          <span class="task-title">${task.title}</span>
-          <span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span>
-        </li>
-      `;
-    });
-  }
-  
-  // Show upcoming tasks
-  if (upcomingTasks.length > 0) {
-    tasksHTML += '<li class="task-header upcoming-header">📆 Upcoming</li>';
-    upcomingTasks.slice(0, 3).forEach(task => {
-      const dueDate = new Date(task.dueDate);
-      const daysUntil = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
-      tasksHTML += `
-        <li class="task-item-dashboard ${task.completed ? 'completed' : ''}">
-          <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                 onchange="taskManager.toggleTask('${task.id}'); updateDashboard();">
-          <span class="task-title">${task.title}</span>
-          <span class="task-date">in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}</span>
-        </li>
-      `;
-    });
-  }
-  
-  if (tasksHTML === '') {
-    tasksHTML = '<li class="no-tasks">No tasks yet! <a href="schedule.html">Add your first task</a></li>';
-  }
-  
-  dashboardTasks.innerHTML = tasksHTML;
-}
+// Initialize dashboard when page loads
+let dashboardInitialized = false;
 
-// Update dashboard
-function updateDashboard() {
-  updateProgress();
-  renderDashboardTasks();
-}
+document.addEventListener('DOMContentLoaded', () => {
+  if (dashboardInitialized) return;
+  dashboardInitialized = true;
+  
+  // Ensure auth system has loaded users data
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
+  }
+  
+  // Verify currentUser is in sync - check both localStorage and sessionStorage
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
+  }
+  
+  new Dashboard();
+});
 
-// Initialize dashboard
-if (window.location.pathname.includes('dashboard.html')) {
-  document.addEventListener('DOMContentLoaded', () => {
-    updateDashboard();
-    
-    // Update every minute
-    setInterval(updateDashboard, 60000);
-  });
+// Also handle if page is already loaded
+if (document.readyState !== 'loading' && !dashboardInitialized) {
+  dashboardInitialized = true;
+  
+  if (!auth.users || Object.keys(auth.users).length === 0) {
+    auth.users = auth.loadFromStorage('users') || {};
+  }
+  
+  const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+  if (storedUser && !auth.currentUser) {
+    auth.currentUser = storedUser;
+  }
+  
+  new Dashboard();
 }

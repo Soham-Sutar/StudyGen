@@ -1,265 +1,210 @@
 // Authentication System
-class Auth {
+class AuthSystem {
   constructor() {
-    this.currentUser = null;
-    this.init();
-  }
-
-  init() {
-    // Check if user is logged in
-    const userData = localStorage.getItem('currentUser');
-    if (userData) {
-      this.currentUser = JSON.parse(userData);
+    // Check localStorage first, then sessionStorage as fallback
+    const localStorageValue = localStorage.getItem('currentUser');
+    const sessionStorageValue = sessionStorage.getItem('currentUser');
+    
+    let fromStorage = localStorageValue || sessionStorageValue;
+    
+    this.users = this.loadFromStorage('users') || {};
+    
+    // Data integrity check - ensure users object has valid username keys
+    const cleanedUsers = {};
+    for (const key in this.users) {
+      const user = this.users[key];
+      // Only keep entries that have a username property and the key matches the username
+      if (user && user.username && typeof user.username === 'string') {
+        cleanedUsers[user.username] = user;
+      }
+    }
+    
+    // If we had to clean data, save the cleaned version
+    if (Object.keys(cleanedUsers).length !== Object.keys(this.users).length) {
+      this.users = cleanedUsers;
+      this.saveToStorage('users', this.users);
+    } else {
+      this.users = cleanedUsers;
+    }
+    
+    this.currentUser = fromStorage || null;
+    
+    // Verify the stored user still exists in users database
+    if (this.currentUser && !this.users[this.currentUser]) {
+      localStorage.removeItem('currentUser');
+      sessionStorage.removeItem('currentUser');
+      this.currentUser = null;
     }
   }
 
-  // Register new user
-  register(username, email, password) {
-    // Get existing users
-    const users = this.getUsers();
-    
-    // Check if username already exists
-    if (users.find(user => user.username === username)) {
+  loadFromStorage(key) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  }
+
+  saveToStorage(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  register(username, email, password, confirmPassword) {
+    // Validation
+    if (!username || !email || !password || !confirmPassword) {
+      return { success: false, message: 'All fields are required' };
+    }
+
+    if (password.length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters' };
+    }
+
+    if (password !== confirmPassword) {
+      return { success: false, message: 'Passwords do not match' };
+    }
+
+    if (this.users[username]) {
       return { success: false, message: 'Username already exists' };
     }
-    
-    // Check if email already exists
-    if (users.find(user => user.email === email)) {
-      return { success: false, message: 'Email already exists' };
-    }
-    
-    // Create new user
-    const newUser = {
-      id: Date.now().toString(),
-      username: username,
-      email: email,
-      password: password, // In production, this should be hashed
+
+    // Create user
+    this.users[username] = {
+      username,
+      email,
+      password, // In production, this should be hashed
       createdAt: new Date().toISOString(),
-      profile: {
-        name: username,
-        studyGoal: 'Not set',
-        dailyGoal: 4
+      tasks: [],
+      studyMaterials: [
+        { id: 1, title: 'Default Study Material', link: '', progress: 0 }
+      ],
+      analytics: {
+        totalHours: 0,
+        sessionsCompleted: 0,
+        progressData: []
       }
     };
-    
-    // Add to users array
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    return { success: true, message: 'Registration successful!' };
+
+    this.saveToStorage('users', this.users);
+    return { success: true, message: 'Registration successful! Please login.' };
   }
 
-  // Login user
-  login(username, password, remember = false) {
-    const users = this.getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-      this.currentUser = user;
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      
-      if (remember) {
-        localStorage.setItem('rememberMe', 'true');
-      }
-      
-      return { success: true, message: 'Login successful!' };
+  login(username, password) {
+    if (!username || !password) {
+      return { success: false, message: 'Username and password are required' };
     }
-    
-    return { success: false, message: 'Invalid username or password' };
+
+    // Ensure users are loaded from storage
+    if (!this.users || Object.keys(this.users).length === 0) {
+      this.users = this.loadFromStorage('users') || {};
+    }
+
+    const user = this.users[username];
+    if (!user || user.password !== password) {
+      return { success: false, message: 'Invalid username or password' };
+    }
+
+    this.currentUser = username;
+    // Use both localStorage and sessionStorage for reliability
+    localStorage.setItem('currentUser', username);
+    sessionStorage.setItem('currentUser', username);
+    return { success: true, message: 'Login successful!' };
   }
 
-  // Logout user
   logout() {
     this.currentUser = null;
     localStorage.removeItem('currentUser');
-    
-    if (!localStorage.getItem('rememberMe')) {
-      // Clear session data but keep users
-      const users = localStorage.getItem('users');
-      localStorage.clear();
-      if (users) {
-        localStorage.setItem('users', users);
-      }
-    }
-    
-    window.location.href = 'login.html';
+    sessionStorage.removeItem('currentUser');
   }
 
-  // Get all users
-  getUsers() {
-    const users = localStorage.getItem('users');
-    return users ? JSON.parse(users) : [];
-  }
-
-  // Check if user is logged in
-  isLoggedIn() {
-    return this.currentUser !== null;
-  }
-
-  // Get current user
   getCurrentUser() {
-    return this.currentUser;
+    if (!this.currentUser) return null;
+    // Ensure users are loaded from storage
+    if (!this.users || Object.keys(this.users).length === 0) {
+      this.users = this.loadFromStorage('users') || {};
+    }
+    return this.users[this.currentUser] || null;
   }
 
-  // Update user profile
-  updateProfile(updates) {
-    if (!this.currentUser) return { success: false, message: 'No user logged in' };
+  isLoggedIn() {
+    // Check both the instance variable and storage as backup
+    if (this.currentUser) return true;
     
-    const users = this.getUsers();
-    const userIndex = users.findIndex(u => u.id === this.currentUser.id);
-    
-    if (userIndex !== -1) {
-      users[userIndex].profile = { ...users[userIndex].profile, ...updates };
-      this.currentUser.profile = users[userIndex].profile;
-      
-      localStorage.setItem('users', JSON.stringify(users));
-      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-      
-      return { success: true, message: 'Profile updated successfully!' };
+    // Check both localStorage and sessionStorage
+    const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    if (storedUser) {
+      this.currentUser = storedUser;
+      return true;
     }
-    
-    return { success: false, message: 'User not found' };
+    return false;
+  }
+
+  updateUserData(data) {
+    if (this.currentUser) {
+      this.users[this.currentUser] = { ...this.users[this.currentUser], ...data };
+      this.saveToStorage('users', this.users);
+    }
   }
 }
 
-// Initialize auth
-const auth = new Auth();
+// Global auth instance
+const auth = new AuthSystem();
 
-// Login page functionality
-if (window.location.pathname.includes('login.html')) {
-  // Check if already logged in
-  if (auth.isLoggedIn()) {
-    window.location.href = 'dashboard.html';
-  }
-
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-  const registerModal = document.getElementById('register-modal');
-  const registerLink = document.getElementById('register-link');
-  const closeModal = document.querySelector('.close');
-  const errorMessage = document.getElementById('error-message');
-  const registerErrorMessage = document.getElementById('register-error-message');
-
-  // Show error message
-  function showError(element, message) {
-    element.textContent = message;
-    element.style.display = 'block';
-    setTimeout(() => {
-      element.style.display = 'none';
-    }, 5000);
-  }
-
-  // Show success message
-  function showSuccess(element, message) {
-    element.textContent = message;
-    element.className = 'success-message';
-    element.style.display = 'block';
-    setTimeout(() => {
-      element.style.display = 'none';
-      element.className = 'error-message';
-    }, 3000);
-  }
-
-  // Login form submission
-  loginForm.addEventListener('submit', (e) => {
+// Login Page Handler
+if (document.getElementById('login-form')) {
+  document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const remember = document.getElementById('remember').checked;
-    
-    const result = auth.login(username, password, remember);
-    
+
+    const result = auth.login(username, password);
+    const errorDiv = document.getElementById('error-message');
+
     if (result.success) {
-      showSuccess(errorMessage, result.message);
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 1000);
+      if (remember) {
+        localStorage.setItem('rememberMe', 'true');
+      }
+      window.location.href = 'dashboard.html';
     } else {
-      showError(errorMessage, result.message);
+      errorDiv.textContent = result.message;
+      errorDiv.style.display = 'block';
     }
   });
 
-  // Open register modal
-  registerLink.addEventListener('click', (e) => {
+  // Register Modal
+  const modal = document.getElementById('register-modal');
+  const closeBtn = document.querySelector('.close');
+  const registerLink = document.getElementById('register-link');
+
+  registerLink.addEventListener('click', function(e) {
     e.preventDefault();
-    registerModal.style.display = 'flex';
+    modal.style.display = 'block';
   });
 
-  // Close register modal
-  closeModal.addEventListener('click', () => {
-    registerModal.style.display = 'none';
+  closeBtn.addEventListener('click', function() {
+    modal.style.display = 'none';
   });
 
-  // Close modal when clicking outside
-  window.addEventListener('click', (e) => {
-    if (e.target === registerModal) {
-      registerModal.style.display = 'none';
+  window.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
     }
   });
 
-  // Register form submission
-  registerForm.addEventListener('submit', (e) => {
+  document.getElementById('register-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    
     const username = document.getElementById('reg-username').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
     const confirmPassword = document.getElementById('reg-confirm-password').value;
-    
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      showError(registerErrorMessage, 'Passwords do not match');
-      return;
-    }
-    
-    // Validate password length
-    if (password.length < 6) {
-      showError(registerErrorMessage, 'Password must be at least 6 characters');
-      return;
-    }
-    
-    const result = auth.register(username, email, password);
-    
+
+    const result = auth.register(username, email, password, confirmPassword);
+    const errorDiv = document.getElementById('register-error-message');
+
     if (result.success) {
-      showSuccess(registerErrorMessage, result.message);
-      setTimeout(() => {
-        registerModal.style.display = 'none';
-        registerForm.reset();
-        // Auto-fill username in login form
-        document.getElementById('username').value = username;
-      }, 1500);
+      alert(result.message);
+      modal.style.display = 'none';
+      document.getElementById('register-form').reset();
     } else {
-      showError(registerErrorMessage, result.message);
+      errorDiv.textContent = result.message;
+      errorDiv.style.display = 'block';
     }
   });
 }
-
-// Check authentication on protected pages
-if (!window.location.pathname.includes('login.html')) {
-  if (!auth.isLoggedIn()) {
-    window.location.href = 'login.html';
-  }
-}
-
-// Handle logout on all pages
-document.addEventListener('DOMContentLoaded', () => {
-  const logoutLinks = document.querySelectorAll('a[href="#logout"]');
-  logoutLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (confirm('Are you sure you want to logout?')) {
-        auth.logout();
-      }
-    });
-  });
-  
-  // Update welcome message on dashboard
-  if (auth.isLoggedIn() && window.location.pathname.includes('dashboard.html')) {
-    const user = auth.getCurrentUser();
-    const welcomeElement = document.querySelector('.dashboard-header h2');
-    if (welcomeElement) {
-      welcomeElement.textContent = `Welcome, ${user.profile.name || user.username}!`;
-    }
-  }
-});

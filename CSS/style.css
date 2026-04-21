@@ -1,0 +1,357 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #1e1e2e;
+    color: #f8f8f2;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Container */
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Sidebar Menu */
+.sidebar {
+    background-color: #282a36;
+    width: 20%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px;
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar .logo {
+    font-size: 1.5rem;
+    color: #ff79c6;
+    margin-bottom: 30px;
+}
+
+.sidebar .menu {
+    list-style: none;
+    width: 100%;
+}
+
+.sidebar .menu li {
+    margin: 15px 0;
+}
+
+.sidebar .menu a {
+    text-decoration: none;
+    color: #f8f8f2;
+    font-size: 1rem;
+    padding: 10px 15px;
+    display: block;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .menu a:hover,
+.sidebar .menu a.active {
+    background-color: #50fa7b;
+    color: #282a36;
+}
+
+/* Main Dashboard */
+.dashboard {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    background-color: #44475a;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-header h2 {
+    color: #50fa7b;
+}
+
+.dashboard-header p {
+    color: #f8f8f2;
+}
+
+/* Tasks Section */
+.tasks, .calendar, .progress {
+    background-color: #282a36;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tasks h3,
+.calendar h3,
+.progress h3 {
+    color: #ff79c6;
+    margin-bottom: 15px;
+}
+
+.tasks ul {
+    list-style: none;
+    padding-left: 15px;
+}
+
+.tasks ul li {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #44475a;
+    border-radius: 5px;
+    color: #f8f8f2;
+    box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Calendar Section */
+.calendar iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 8px;
+}
+
+/* Progress Bar Section */
+.progress-bar-container {
+    background-color: #44475a;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 25px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    background-color: #50fa7b;
+    height: 100%;
+    line-height: 25px;
+    text-align: center;
+    color: #282a36;
+    font-weight: bold;
+    transition: width 0.4s ease;
+}
+
+.progress-text {
+    margin-top: 10px;
+    color: #bd93f9;
+    font-size: 0.9rem;
+}
+
+/* Task items in dashboard */
+.task-item-dashboard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #44475a;
+    border-radius: 5px;
+    margin-bottom: 8px;
+}
+
+.task-item-dashboard.completed {
+    opacity: 0.6;
+}
+
+.task-item-dashboard.overdue {
+    border-left: 3px solid #ff5555;
+}
+
+.task-item-dashboard input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.task-item-dashboard .task-title {
+    flex: 1;
+}
+
+.task-item-dashboard.completed .task-title {
+    text-decoration: line-through;
+}
+
+.task-priority {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.priority-high {
+    background-color: #ff5555;
+    color: white;
+}
+
+.priority-medium {
+    background-color: #f1fa8c;
+    color: #282a36;
+}
+
+.priority-low {
+    background-color: #8be9fd;
+    color: #282a36;
+}
+
+.task-date {
+    font-size: 0.85rem;
+    color: #bd93f9;
+}
+
+.task-header {
+    font-weight: bold;
+    color: #ff79c6;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    padding: 5px;
+    background: none !important;
+}
+
+.no-tasks {
+    text-align: center;
+    color: #6272a4;
+    font-style: italic;
+}
+
+.no-tasks a {
+    color: #50fa7b;
+    text-decoration: none;
+}
+
+.no-tasks a:hover {
+    text-decoration: underline;
+}
+
+.btn-link {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 8px 16px;
+    background-color: #50fa7b;
+    color: #282a36;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-link:hover {
+    background-color: #45d96b;
+    transform: translateY(-2px);
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-success {
+    background-color: #50fa7b;
+    color: #282a36;
+}
+
+.notification-error {
+    background-color: #ff5555;
+}
+
+.notification-info {
+    background-color: #8be9fd;
+    color: #282a36;
+}
+
+/* Mobile Menu Toggle */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background-color: #50fa7b;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 25%;
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+    
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        width: 70%;
+        height: 100%;
+        z-index: 1000;
+        transition: left 0.3s ease;
+    }
+    
+    .sidebar.active {
+        left: 0;
+    }
+    
+    .dashboard {
+        width: 100%;
+        padding: 80px 15px 15px;
+    }
+    
+    .calendar iframe {
+        height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        width: 85%;
+    }
+    
+    .dashboard-header {
+        padding: 15px;
+    }
+    
+    .dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .tasks, .calendar, .progress {
+        padding: 15px;
+    }
+}

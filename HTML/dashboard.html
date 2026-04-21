@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Study Schedule Generator</title>
+  <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar Menu -->
+    <nav class="sidebar">
+      <h1 class="logo">StudyGen</h1>
+      <ul class="menu">
+        <li><a href="dashboard.html" class="active">Dashboard</a></li>
+        <li><a href="schedule.html">Schedule Task</a></li>
+        <li><a href="study-material.html">Study Material</a></li>
+        <li><a href="analytics.html">Analytics</a></li>
+        <li><a href="#logout">Logout</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard">
+      <header class="dashboard-header">
+        <h2>Welcome, Student!</h2>
+        <p>Track your progress and plan your studies efficiently.</p>
+      </header>
+
+      <section class="tasks">
+        <h3>Your Tasks</h3>
+        <ul>
+          <li>Complete Chapter 5 of Physics</li>
+          <li>Revise Algebra for 1 hour</li>
+          <li>Prepare notes for History exam</li>
+        </ul>
+      </section>
+
+      <section class="calendar">
+        <h3>Calendar</h3>
+        <iframe src="https://calendar.google.com/calendar/embed" frameborder="0"></iframe>
+      </section>
+
+      <section class="progress">
+        <h3>Today's Progress</h3>
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: 70%;">70%</div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

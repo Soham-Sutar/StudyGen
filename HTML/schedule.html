@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Task</title>
+  <link rel="stylesheet" href="../CSS/schedule.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar Menu -->
+    <nav class="sidebar">
+      <h1 class="logo">StudyGen</h1>
+      <ul class="menu">
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="schedule.html" class="active">Schedule Task</a></li>
+        <li><a href="study-material.html">Study Material</a></li>
+        <li><a href="analytics.html">Analytics</a></li>
+        <li><a href="#logout">Logout</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="schedule-task">
+      <header class="dashboard-header">
+        <h2>Schedule Your Tasks</h2>
+        <p>Plan your tasks to stay organized and efficient.</p>
+      </header>
+
+      <section class="task-form">
+        <h3>Add a New Task</h3>
+        <form id="task-form">
+          <label for="task-title">Task Title:</label>
+          <input type="text" id="task-title" name="task-title" placeholder="Enter task title" required>
+
+          <label for="task-date">Due Date:</label>
+          <input type="date" id="task-date" name="task-date" required>
+
+          <label for="task-priority">Priority:</label>
+          <select id="task-priority" name="task-priority">
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <label for="task-subject">Subject:</label>
+          <select id="task-subject" name="task-subject">
+            <option value="General">General</option>
+            <option value="Physics">Physics</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Biology">Biology</option>
+            <option value="History">History</option>
+            <option value="Geography">Geography</option>
+            <option value="English">English</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Other">Other</option>
+          </select>
+
+          <button type="submit" class="btn">Add Task</button>
+        </form>
+      </section>
+
+      <section class="task-list">
+        <h3>Scheduled Tasks</h3>
+        <ul id="task-list">
+          <!-- Tasks will be dynamically added here -->
+          <li>Example: Complete Chapter 5 of Physics (High Priority) - Due Tomorrow</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+  <script src="../Javascript/auth.js"></script>
+  <script src="../Javascript/schedule.js"></script>
+</body>
+</html>

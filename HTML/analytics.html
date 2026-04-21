@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - Smart Study Schedule Generator</title>
+  <link rel="stylesheet" href="../CSS/analytics.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar Menu -->
+    <nav class="sidebar">
+      <h1 class="logo">StudyGen</h1>
+      <ul class="menu">
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="schedule.html">Schedule Task</a></li>
+        <li><a href="study-material.html">Study Material</a></li>
+        <li><a href="analytics.html" class="active">Analytics</a></li>
+        <li><a href="#logout">Logout</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Analytics -->
+    <main class="analytics">
+      <header class="analytics-header">
+        <h2>Analytics</h2>
+        <p>Track your study progress and performance over time.</p>
+      </header>
+
+      <section class="study-performance">
+        <h3>Study Performance Over Time</h3>
+        <canvas id="performanceChart"></canvas>
+      </section>
+
+      <section class="time-spent">
+        <h3>Time Spent on Subjects</h3>
+        <canvas id="timeSpentChart"></canvas>
+      </section>
+
+      <section class="completion-rates">
+        <h3>Task Completion Rate</h3>
+        <canvas id="completionRateChart"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Data for the study performance chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(performanceCtx, {
+      type: 'line',
+      data: {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        datasets: [{
+          label: 'Study Performance (%)',
+          data: [60, 70, 80, 90],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Data for the time spent chart
+    const timeSpentCtx = document.getElementById('timeSpentChart').getContext('2d');
+    const timeSpentChart = new Chart(timeSpentCtx, {
+      type: 'pie',
+      data: {
+        labels: ['Physics', 'Math', 'History', 'Others'],
+        datasets: [{
+          label: 'Time Spent on Subjects',
+          data: [40, 30, 20, 10],
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+
+    // Data for the task completion rate chart
+    const completionRateCtx = document.getElementById('completionRateChart').getContext('2d');
+    const completionRateChart = new Chart(completionRateCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Completed', 'Pending'],
+        datasets: [{
+          label: 'Task Completion Rate',
+          data: [75, 25],
+          backgroundColor: ['#4CAF50', '#FF5733']
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+  <script src="../Javascript/auth.js"></script>
+  <script src="../Javascript/analytics.js"></script>
+</body>
+</html>

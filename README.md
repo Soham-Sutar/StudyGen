@@ -171,8 +171,6 @@ WEBAPP/
 ✅ Automatic session management
 ✅ Data persistence across sessions
 
-
-
 ### Extend Features
 1. Add new pages in `HTML/` folder
 2. Create corresponding JS file in `Javascript/`

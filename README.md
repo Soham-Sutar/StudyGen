@@ -179,10 +179,11 @@ WEBAPP/
 5. Connect to auth.js for user session management
 
 
-## 📄 License
+## 📜 License
 
-This project is provided as-is for educational purposes.
+This project is open-source and available under the MIT License.
 
 ---
+
 
 **Happy Studying! 📚**
